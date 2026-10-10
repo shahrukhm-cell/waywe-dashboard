@@ -96,11 +96,12 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Confirmed date</label>
-                            <input type="date" name="confirmed_date" value="{{ old('confirmed_date') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <input type="date" name="confirmed_date" value="{{ old('confirmed_date', today()->toDateString()) }}" readonly class="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Booked date</label>
-                            <input type="date" name="booked_date" value="{{ old('booked_date') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <label class="block text-sm font-medium text-gray-700">Booked date / work date</label>
+                            <input type="date" name="booked_date" value="{{ old('booked_date') }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <p class="mt-1 text-xs text-gray-500">This will also be saved as the scheduled date.</p>
                         </div>
                     </div>
                 </div>
@@ -134,7 +135,7 @@
                                     <th class="border px-2 py-2 text-left">Description</th>
                                     <th class="border px-2 py-2 text-left">Unit</th>
                                     <th class="border px-2 py-2 text-left">Qty</th>
-                                    <th class="border px-2 py-2 text-left">Time</th>
+                                    <th class="border px-2 py-2 text-left">Scheduled time</th>
                                     <th class="border px-2 py-2 text-left">Amount</th>
                                     <th class="border px-2 py-2 text-left">Action</th>
                                 </tr>
@@ -163,14 +164,6 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Crew / route</label>
                             <input type="text" name="crew_route" value="{{ old('crew_route') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Day</label>
-                            <input type="date" name="scheduled_date" value="{{ old('scheduled_date') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Time</label>
-                            <input type="time" name="scheduled_time" value="{{ old('scheduled_time') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Best time</label>

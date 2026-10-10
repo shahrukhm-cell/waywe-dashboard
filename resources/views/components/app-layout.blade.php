@@ -6,6 +6,24 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'WAYWE Service') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        .datatable-wrapper{min-width:100%;display:grid;gap:.75rem}
+        .datatable-toolbar{display:flex;flex-direction:column;gap:.75rem}
+        @media (min-width:640px){.datatable-toolbar{flex-direction:row;align-items:flex-end;justify-content:space-between}}
+        .datatable-search,.datatable-length{display:flex;flex-direction:column;gap:.25rem;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#64748b}
+        .datatable-search input,.datatable-length select{border:1px solid #cbd5e1;border-radius:.5rem;color:#0f172a;font-size:.875rem;font-weight:400;letter-spacing:0;text-transform:none;box-shadow:0 1px 2px rgb(15 23 42 / .05)}
+        .datatable-search input{width:100%;max-width:18rem}
+        .datatable-length select{width:7rem}
+        .datatable-table th.datatable-sortable{cursor:pointer;user-select:none}
+        .datatable-table th.datatable-sortable::after{content:" \2195";color:#94a3b8}
+        .datatable-footer{display:flex;flex-direction:column;gap:.75rem;color:#64748b;font-size:.875rem}
+        @media (min-width:640px){.datatable-footer{flex-direction:row;align-items:center;justify-content:space-between}}
+        .datatable-pagination{display:flex;align-items:center;gap:.5rem}
+        .datatable-pagination button{border:1px solid #e2e8f0;border-radius:.5rem;background:#fff;padding:.375rem .75rem;font-size:.875rem;font-weight:700;color:#334155}
+        .datatable-pagination button:hover{background:#f8fafc}
+        .datatable-pagination button:disabled{cursor:not-allowed;opacity:.5}
+        .datatable-pagination span{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#64748b}
+    </style>
 </head>
 <body class="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
     <div class="flex min-h-screen">
@@ -55,5 +73,127 @@
             </main>
         </div>
     </div>
+    <script>
+        (() => {
+            const enhanceDataTables = (scope = document) => {
+                scope.querySelectorAll('table:not([data-no-datatable])').forEach((table) => {
+                    if (table.dataset.datatableInitialized === 'true' || table.closest('form') || !table.tHead || !table.tBodies.length) {
+                        return;
+                    }
+
+                    const tbody = table.tBodies[0];
+                    const allRows = Array.from(tbody.rows);
+                    if (allRows.length <= 1) {
+                        return;
+                    }
+
+                    table.dataset.datatableInitialized = 'true';
+                    table.classList.add('datatable-table');
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'datatable-wrapper';
+                    table.parentNode.insertBefore(wrapper, table);
+
+                    const toolbar = document.createElement('div');
+                    toolbar.className = 'datatable-toolbar';
+                    toolbar.innerHTML = '<label class="datatable-search"><span>Search</span><input type="search" placeholder="Search table"></label><label class="datatable-length"><span>Rows</span><select><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="all">All</option></select></label>';
+
+                    const footer = document.createElement('div');
+                    footer.className = 'datatable-footer';
+                    footer.innerHTML = '<p class="datatable-info"></p><div class="datatable-pagination"><button type="button" data-page-action="previous">Previous</button><span></span><button type="button" data-page-action="next">Next</button></div>';
+
+                    wrapper.appendChild(toolbar);
+                    wrapper.appendChild(table);
+                    wrapper.appendChild(footer);
+
+                    const searchInput = toolbar.querySelector('input');
+                    const lengthSelect = toolbar.querySelector('select');
+                    const info = footer.querySelector('.datatable-info');
+                    const pageLabel = footer.querySelector('.datatable-pagination span');
+                    const previousButton = footer.querySelector('[data-page-action="previous"]');
+                    const nextButton = footer.querySelector('[data-page-action="next"]');
+                    let currentPage = 1;
+                    let sortColumn = null;
+                    let sortDirection = 'asc';
+
+                    const filteredRows = () => {
+                        const query = searchInput.value.trim().toLowerCase();
+                        let rows = query === '' ? [...allRows] : allRows.filter((row) => row.textContent.toLowerCase().includes(query));
+
+                        if (sortColumn !== null) {
+                            rows.sort((first, second) => {
+                                const firstValue = first.cells[sortColumn]?.textContent.trim() ?? '';
+                                const secondValue = second.cells[sortColumn]?.textContent.trim() ?? '';
+                                const result = firstValue.localeCompare(secondValue, undefined, { numeric: true, sensitivity: 'base' });
+                                return sortDirection === 'asc' ? result : -result;
+                            });
+                        }
+
+                        return rows;
+                    };
+
+                    const render = () => {
+                        const rows = filteredRows();
+                        const pageSize = lengthSelect.value === 'all' ? rows.length || 1 : Number(lengthSelect.value);
+                        const pageCount = Math.max(Math.ceil(rows.length / pageSize), 1);
+                        currentPage = Math.min(currentPage, pageCount);
+                        const start = (currentPage - 1) * pageSize;
+                        const visibleRows = rows.slice(start, start + pageSize);
+
+                        allRows.forEach((row) => {
+                            row.hidden = true;
+                            tbody.appendChild(row);
+                        });
+                        visibleRows.forEach((row) => {
+                            row.hidden = false;
+                            tbody.appendChild(row);
+                        });
+
+                        info.textContent = `Showing ${rows.length === 0 ? 0 : start + 1}-${Math.min(start + pageSize, rows.length)} of ${rows.length} rows`;
+                        pageLabel.textContent = `Page ${currentPage} of ${pageCount}`;
+                        previousButton.disabled = currentPage === 1;
+                        nextButton.disabled = currentPage === pageCount;
+                    };
+
+                    Array.from(table.tHead.rows[0].cells).forEach((cell, index) => {
+                        cell.classList.add('datatable-sortable');
+                        cell.tabIndex = 0;
+                        cell.addEventListener('click', () => {
+                            if (sortColumn === index) {
+                                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                            } else {
+                                sortColumn = index;
+                                sortDirection = 'asc';
+                            }
+                            currentPage = 1;
+                            render();
+                        });
+                    });
+
+                    searchInput.addEventListener('input', () => {
+                        currentPage = 1;
+                        render();
+                    });
+                    lengthSelect.addEventListener('change', () => {
+                        currentPage = 1;
+                        render();
+                    });
+                    previousButton.addEventListener('click', () => {
+                        currentPage -= 1;
+                        render();
+                    });
+                    nextButton.addEventListener('click', () => {
+                        currentPage += 1;
+                        render();
+                    });
+
+                    render();
+                });
+            };
+
+            document.addEventListener('DOMContentLoaded', () => enhanceDataTables());
+            new MutationObserver(() => enhanceDataTables()).observe(document.body, { childList: true, subtree: true });
+        })();
+    </script>
 </body>
 </html>

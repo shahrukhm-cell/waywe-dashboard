@@ -18,6 +18,7 @@
                 <p class="text-xs font-semibold uppercase tracking-widest text-indigo-600">Service estimate</p>
                 <h2 class="mt-2 text-2xl font-bold text-slate-900">Quote {{ $job->quote_estimate_number }}</h2>
                 <p class="mt-1 text-sm text-slate-500">Prepared {{ $job->created_at->format('F j, Y') }}</p>
+                <p class="mt-1 text-sm font-semibold text-slate-700">Expires {{ $job->created_at->copy()->addDays(30)->format('F j, Y') }}</p>
             </div>
             <div class="text-sm sm:text-right">
                 <p class="font-semibold text-slate-900">{{ $job->site_business ?: config('app.name') }}</p>
@@ -47,6 +48,6 @@
         @if ($job->notes)
             <div class="mt-8 rounded-lg bg-slate-50 p-4"><h3 class="text-sm font-semibold text-slate-900">Quote notes</h3><p class="mt-2 whitespace-pre-line text-sm text-slate-600">{{ $job->notes }}</p></div>
         @endif
-        <p class="mt-8 border-t border-slate-100 pt-5 text-xs leading-5 text-slate-500">This is a quote / estimate only. The work will be scheduled and dispatched after approval. Payment is not recorded on this document.</p>
+        <p class="mt-8 border-t border-slate-100 pt-5 text-xs leading-5 text-slate-500">This quote / estimate is valid for 30 days from the prepared date and expires on {{ $job->created_at->copy()->addDays(30)->format('F j, Y') }}. The work will be scheduled and dispatched after approval. Payment is not recorded on this document.</p>
     </article>
 </x-app-layout>

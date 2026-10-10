@@ -1,3 +1,56 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+    .datatable-wrapper {
+        @apply min-w-full space-y-3;
+    }
+
+    .datatable-toolbar {
+        @apply flex flex-col justify-between gap-3 sm:flex-row sm:items-end;
+    }
+
+    .datatable-search,
+    .datatable-length {
+        @apply flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500;
+    }
+
+    .datatable-search input,
+    .datatable-length select {
+        @apply rounded-lg border-slate-300 text-sm font-normal normal-case tracking-normal text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500;
+    }
+
+    .datatable-search input {
+        @apply w-full sm:w-72;
+    }
+
+    .datatable-length select {
+        @apply w-28;
+    }
+
+    .datatable-table th.datatable-sortable {
+        @apply cursor-pointer select-none;
+    }
+
+    .datatable-table th.datatable-sortable::after {
+        content: " \2195";
+        @apply text-slate-400;
+    }
+
+    .datatable-footer {
+        @apply flex flex-col justify-between gap-3 text-sm text-slate-500 sm:flex-row sm:items-center;
+    }
+
+    .datatable-pagination {
+        @apply flex items-center gap-2;
+    }
+
+    .datatable-pagination button {
+        @apply rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .datatable-pagination span {
+        @apply text-xs font-semibold uppercase tracking-wide text-slate-500;
+    }
+}

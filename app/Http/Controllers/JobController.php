@@ -38,13 +38,14 @@ class JobController extends Controller
         $calendarEnd = $month->copy()->endOfMonth()->endOfWeek(Carbon::SATURDAY);
 
         $jobs = Job::with('customer')
-            ->whereNotNull('scheduled_date')
-            ->whereDate('scheduled_date', '>=', $calendarStart)
-            ->whereDate('scheduled_date', '<=', $calendarEnd)
-            ->orderBy('scheduled_date')
+            ->whereRaw('COALESCE(booked_date, scheduled_date) BETWEEN ? AND ?', [
+                $calendarStart->toDateString(),
+                $calendarEnd->toDateString(),
+            ])
+            ->orderByRaw('COALESCE(booked_date, scheduled_date)')
             ->orderBy('scheduled_time')
             ->get()
-            ->groupBy(fn (Job $job) => $job->scheduled_date->toDateString());
+            ->groupBy(fn (Job $job) => ($job->booked_date ?? $job->scheduled_date)->toDateString());
 
         $weeks = collect();
         $cursor = $calendarStart->copy();
@@ -72,7 +73,7 @@ class JobController extends Controller
 
         $monthJobCount = $jobs
             ->flatten(1)
-            ->filter(fn (Job $job) => $job->scheduled_date->isSameMonth($month))
+            ->filter(fn (Job $job) => ($job->booked_date ?? $job->scheduled_date)->isSameMonth($month))
             ->count();
 
         return view('jobs.calendar', [
@@ -118,7 +119,7 @@ class JobController extends Controller
             'billing_postal_code' => ['nullable', 'string', 'max:50'],
             'po_number' => ['nullable', 'string', 'max:255'],
             'confirmed_date' => ['nullable', 'date'],
-            'booked_date' => ['nullable', 'date'],
+            'booked_date' => ['required', 'date'],
             'job_type' => ['required', 'in:estimate,job,redo,pending,adjustment,delivery'],
             'quote_estimate_number' => ['nullable', 'string', 'max:255'],
             'items' => ['nullable', 'array'],
@@ -150,6 +151,8 @@ class JobController extends Controller
         ]);
 
         $customer = $this->resolveCustomer($request);
+        $bookedDate = $validated['booked_date'];
+        $scheduledTime = $this->firstItemTime($request->input('items', [])) ?? ($validated['scheduled_time'] ?? null);
 
         $job = Job::create([
             'customer_id' => $customer?->id,
@@ -157,8 +160,8 @@ class JobController extends Controller
             'po_number' => $validated['po_number'] ?? null,
             'job_type' => $validated['job_type'],
             'status' => 'quote',
-            'confirmed_date' => $validated['confirmed_date'] ?? null,
-            'booked_date' => $validated['booked_date'] ?? null,
+            'confirmed_date' => today()->toDateString(),
+            'booked_date' => $bookedDate,
             'site_full_name' => $validated['site_full_name'] ?? $customer?->full_name,
             'site_telephone' => $validated['site_telephone'] ?? $customer?->phone,
             'site_business' => $validated['site_business'] ?? $customer?->business,
@@ -176,9 +179,9 @@ class JobController extends Controller
             'billing_state' => $validated['billing_state'] ?? $validated['site_state'] ?? $customer?->state,
             'billing_postal_code' => $validated['billing_postal_code'] ?? $validated['site_postal_code'] ?? $customer?->postal_code,
             'crew_route' => $validated['crew_route'] ?? null,
-            'scheduled_day' => isset($validated['scheduled_date']) ? date('D', strtotime($validated['scheduled_date'])) : null,
-            'scheduled_date' => $validated['scheduled_date'] ?? null,
-            'scheduled_time' => $validated['scheduled_time'] ?? null,
+            'scheduled_day' => date('D', strtotime($bookedDate)),
+            'scheduled_date' => $bookedDate,
+            'scheduled_time' => $scheduledTime,
             'best_time' => $validated['best_time'] ?? null,
             'source' => $validated['source'] ?? null,
             'source_percent' => $validated['source_percent'] ?? 0,
@@ -237,7 +240,7 @@ class JobController extends Controller
             'billing_postal_code' => ['nullable', 'string', 'max:50'],
             'po_number' => ['nullable', 'string', 'max:255'],
             'confirmed_date' => ['nullable', 'date'],
-            'booked_date' => ['nullable', 'date'],
+            'booked_date' => ['required', 'date'],
             'crew_route' => ['nullable', 'string', 'max:255'],
             'source' => ['nullable', 'string', 'max:255'],
             'source_percent' => ['nullable', 'numeric', 'min:0'],
@@ -266,13 +269,16 @@ class JobController extends Controller
             'technicians.*.amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
+        $bookedDate = $validated['booked_date'];
+        $scheduledTime = $this->firstItemTime($request->input('items', [])) ?? ($validated['scheduled_time'] ?? $job->scheduled_time);
+
         $job->update([
             'quote_estimate_number' => $validated['quote_estimate_number'] ?? $job->quote_estimate_number,
             'po_number' => $validated['po_number'] ?? $job->po_number,
             'job_type' => $validated['job_type'],
             'status' => $job->status,
-            'confirmed_date' => $validated['confirmed_date'] ?? $job->confirmed_date,
-            'booked_date' => $validated['booked_date'] ?? $job->booked_date,
+            'confirmed_date' => $validated['confirmed_date'] ?? $job->confirmed_date ?? today()->toDateString(),
+            'booked_date' => $bookedDate,
             'site_full_name' => $validated['site_full_name'] ?? $job->site_full_name,
             'site_telephone' => $validated['site_telephone'] ?? $job->site_telephone,
             'site_business' => $validated['site_business'] ?? $job->site_business,
@@ -290,9 +296,9 @@ class JobController extends Controller
             'billing_state' => $validated['billing_state'] ?? $job->billing_state,
             'billing_postal_code' => $validated['billing_postal_code'] ?? $job->billing_postal_code,
             'crew_route' => $validated['crew_route'] ?? $job->crew_route,
-            'scheduled_day' => isset($validated['scheduled_date']) ? date('D', strtotime($validated['scheduled_date'])) : $job->scheduled_day,
-            'scheduled_date' => $validated['scheduled_date'] ?? $job->scheduled_date,
-            'scheduled_time' => $validated['scheduled_time'] ?? $job->scheduled_time,
+            'scheduled_day' => date('D', strtotime($bookedDate)),
+            'scheduled_date' => $bookedDate,
+            'scheduled_time' => $scheduledTime,
             'best_time' => $validated['best_time'] ?? $job->best_time,
             'source' => $validated['source'] ?? $job->source,
             'source_percent' => $validated['source_percent'] ?? $job->source_percent,
@@ -350,6 +356,7 @@ class JobController extends Controller
         $job->update([
             'status' => 'scheduled',
             'crew_route' => $validated['crew_route'] ?? null,
+            'booked_date' => $validated['scheduled_date'],
             'scheduled_day' => date('D', strtotime($validated['scheduled_date'])),
             'scheduled_date' => $validated['scheduled_date'],
             'scheduled_time' => $validated['scheduled_time'] ?? null,
@@ -615,6 +622,17 @@ class JobController extends Controller
                 'amount' => (float) ($item['amount'] ?? 0),
             ]);
         }
+    }
+
+    protected function firstItemTime(array $items): ?string
+    {
+        foreach ($items as $item) {
+            if (is_array($item) && ! empty($item['time'])) {
+                return $item['time'];
+            }
+        }
+
+        return null;
     }
 
     protected function storeTechnicians(Job $job, array $technicians): void

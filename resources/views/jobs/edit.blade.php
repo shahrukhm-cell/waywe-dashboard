@@ -38,6 +38,19 @@
                             <label class="block text-sm font-medium text-gray-700">Other tax</label>
                             <input type="number" step="0.01" name="other_tax" value="{{ old('other_tax', $job->other_tax) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                         </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Confirmed date</label>
+                            <input type="date" name="confirmed_date" value="{{ old('confirmed_date', $job->confirmed_date?->toDateString() ?? today()->toDateString()) }}" readonly class="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Booked date / work date</label>
+                            <input type="date" name="booked_date" value="{{ old('booked_date', $job->booked_date?->toDateString() ?? $job->scheduled_date?->toDateString()) }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <p class="mt-1 text-xs text-gray-500">This will also be saved as the scheduled date.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Best time</label>
+                            <input type="time" name="best_time" value="{{ old('best_time', $job->best_time) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
                     </div>
                 </div>
 
@@ -118,7 +131,7 @@
                                     <th class="border px-2 py-2 text-left">Description</th>
                                     <th class="border px-2 py-2 text-left">Unit</th>
                                     <th class="border px-2 py-2 text-left">Qty</th>
-                                    <th class="border px-2 py-2 text-left">Time</th>
+                                    <th class="border px-2 py-2 text-left">Scheduled time</th>
                                     <th class="border px-2 py-2 text-left">Amount</th>
                                     <th class="border px-2 py-2 text-left"><button type="button" id="add-item-row" class="text-indigo-700">Add row</button></th>
                                 </tr>

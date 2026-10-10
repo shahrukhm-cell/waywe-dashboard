@@ -25,7 +25,7 @@
 <body>
     <div class="top">
         <div class="row">
-            <div class="left"><div class="label">Service estimate</div><h1>Quote {{ $job->quote_estimate_number }}</h1><div>Prepared {{ $job->created_at->format('F j, Y') }}</div></div>
+            <div class="left"><div class="label">Service estimate</div><h1>Quote {{ $job->quote_estimate_number }}</h1><div>Prepared {{ $job->created_at->format('F j, Y') }}</div><div><strong>Expires {{ $job->created_at->copy()->addDays(30)->format('F j, Y') }}</strong></div></div>
             <div class="right"><strong>{{ $job->site_business ?: config('app.name') }}</strong><br>For: {{ $job->billing_full_name ?: $job->site_full_name ?: $job->customer?->full_name }}<br>{{ $job->billing_telephone ?: $job->site_telephone }}<br>{{ trim(collect([$job->billing_address ?: $job->site_address, $job->billing_city ?: $job->site_city, $job->billing_state ?: $job->site_state, $job->billing_postal_code ?: $job->site_postal_code])->filter()->implode(', ')) }}</div>
         </div>
     </div>
@@ -44,6 +44,6 @@
         <tr class="grand"><td>Quote total</td><td class="number">${{ number_format((float) $job->total, 2) }}</td></tr>
     </table>
     @if ($job->notes)<div class="note"><strong>Quote notes</strong><br>{{ $job->notes }}</div>@endif
-    <div class="footer">This is a quote / estimate only. Work is scheduled and dispatched after approval. Payment is not recorded on this document.</div>
+    <div class="footer">This quote / estimate is valid for 30 days from the prepared date and expires on {{ $job->created_at->copy()->addDays(30)->format('F j, Y') }}. Work is scheduled and dispatched after approval. Payment is not recorded on this document.</div>
 </body>
 </html>
