@@ -34,7 +34,8 @@
                 </div>
                 <nav class="flex flex-wrap gap-1 border-t border-slate-100 px-3 py-2 lg:hidden">
                     <a href="{{ route('dashboard') }}" class="whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium {{ request()->routeIs('dashboard') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50' }}">Overview</a>
-                    <a href="{{ route('jobs.index') }}" class="whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium {{ request()->routeIs('jobs.*') && ! request()->routeIs('jobs.deleted') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50' }}">Jobs</a>
+                    <a href="{{ route('jobs.index') }}" class="whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium {{ request()->routeIs('jobs.*') && ! request()->routeIs('jobs.deleted') && ! request()->routeIs('jobs.calendar') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50' }}">Jobs</a>
+                    <a href="{{ route('jobs.calendar') }}" class="whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium {{ request()->routeIs('jobs.calendar') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50' }}">Calendar</a>
                     <a href="{{ route('customers.index') }}" class="whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium {{ request()->routeIs('customers.*') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50' }}">Customers</a>
                     <a href="{{ route('jobs.deleted') }}" class="whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium {{ request()->routeIs('jobs.deleted') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50' }}">Deleted</a>
                     <form method="POST" action="{{ route('logout') }}" class="sm:hidden">

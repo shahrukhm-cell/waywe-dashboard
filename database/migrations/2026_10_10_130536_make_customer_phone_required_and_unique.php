@@ -30,6 +30,13 @@ return new class extends Migration
             return;
         }
 
+        $phoneUniqueIndexExists = collect(Schema::getIndexes('customers'))
+            ->contains(fn (array $index) => $index['unique'] && $index['columns'] === ['phone']);
+
+        if ($phoneUniqueIndexExists) {
+            return;
+        }
+
         Schema::table('customers', function ($table) {
             $table->unique('phone', 'customers_phone_unique');
         });

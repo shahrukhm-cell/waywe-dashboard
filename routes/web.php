@@ -20,6 +20,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
 
     Route::get('/jobs', [JobController::class, 'index'])->name('jobs.index');
+    Route::get('/jobs/calendar', [JobController::class, 'calendar'])->name('jobs.calendar');
     Route::get('/jobs/create', [JobController::class, 'create'])->name('jobs.create');
     Route::post('/jobs', [JobController::class, 'store'])->name('jobs.store');
     Route::get('/jobs/{job}', [JobController::class, 'show'])->name('jobs.show');

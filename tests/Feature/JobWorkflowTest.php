@@ -159,4 +159,28 @@ class JobWorkflowTest extends TestCase
 
         $this->assertSame(0, $job->payments()->count());
     }
+
+    public function test_approval_assigns_a_number_above_all_existing_numbers_including_archived_jobs(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $archivedJob = Job::create([
+            'job_number' => '62779',
+            'status' => 'completed',
+            'job_type' => 'job',
+        ]);
+        $archivedJob->delete();
+
+        Job::create([
+            'job_number' => '62778',
+            'status' => 'completed',
+            'job_type' => 'job',
+        ]);
+
+        $job = Job::create(['status' => 'quote']);
+
+        $this->post(route('jobs.confirm', $job))->assertRedirect();
+
+        $this->assertSame('62780', $job->fresh()->job_number);
+    }
 }

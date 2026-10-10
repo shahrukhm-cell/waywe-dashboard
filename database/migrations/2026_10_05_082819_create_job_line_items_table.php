@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('job_line_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('job_id')->constrained('service_jobs')->cascadeOnDelete();
+            $table->unsignedBigInteger('job_id');
             $table->string('area_item')->nullable();
             $table->decimal('length', 8, 2)->default(0);
             $table->decimal('width', 8, 2)->default(0);

@@ -9,6 +9,7 @@ use App\Models\JobNote;
 use App\Models\JobPayment;
 use App\Models\JobTechnician;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -21,6 +22,66 @@ class JobController extends Controller
         $jobs = Job::with('customer')->latest()->get();
 
         return view('jobs.index', compact('jobs'));
+    }
+
+    public function calendar(Request $request)
+    {
+        $validated = $request->validate([
+            'month' => ['nullable', 'date_format:Y-m'],
+        ]);
+
+        $month = isset($validated['month'])
+            ? Carbon::createFromFormat('Y-m', $validated['month'])->startOfMonth()
+            : today()->startOfMonth();
+
+        $calendarStart = $month->copy()->startOfWeek(Carbon::SUNDAY);
+        $calendarEnd = $month->copy()->endOfMonth()->endOfWeek(Carbon::SATURDAY);
+
+        $jobs = Job::with('customer')
+            ->whereNotNull('scheduled_date')
+            ->whereDate('scheduled_date', '>=', $calendarStart)
+            ->whereDate('scheduled_date', '<=', $calendarEnd)
+            ->orderBy('scheduled_date')
+            ->orderBy('scheduled_time')
+            ->get()
+            ->groupBy(fn (Job $job) => $job->scheduled_date->toDateString());
+
+        $weeks = collect();
+        $cursor = $calendarStart->copy();
+
+        while ($cursor->lte($calendarEnd)) {
+            $week = collect();
+
+            for ($day = 0; $day < 7; $day++) {
+                $dateKey = $cursor->toDateString();
+                $dayJobs = $jobs->get($dateKey, collect());
+
+                $week->push([
+                    'date' => $cursor->copy(),
+                    'jobs' => $dayJobs,
+                    'count' => $dayJobs->count(),
+                    'is_current_month' => $cursor->isSameMonth($month),
+                    'is_today' => $cursor->isToday(),
+                ]);
+
+                $cursor->addDay();
+            }
+
+            $weeks->push($week);
+        }
+
+        $monthJobCount = $jobs
+            ->flatten(1)
+            ->filter(fn (Job $job) => $job->scheduled_date->isSameMonth($month))
+            ->count();
+
+        return view('jobs.calendar', [
+            'month' => $month,
+            'previousMonth' => $month->copy()->subMonth()->format('Y-m'),
+            'nextMonth' => $month->copy()->addMonth()->format('Y-m'),
+            'weeks' => $weeks,
+            'monthJobCount' => $monthJobCount,
+        ]);
     }
 
     public function create(Request $request)
@@ -615,8 +676,12 @@ class JobController extends Controller
 
     protected function generateJobNumber(): string
     {
-        $latest = Job::whereNotNull('job_number')->latest('id')->first();
-        $base = $latest ? (int) filter_var($latest->job_number, FILTER_SANITIZE_NUMBER_INT) : 62775;
+        $highestJobNumber = Job::withTrashed()
+            ->whereNotNull('job_number')
+            ->pluck('job_number')
+            ->map(fn ($jobNumber) => (int) filter_var($jobNumber, FILTER_SANITIZE_NUMBER_INT))
+            ->max();
+        $base = $highestJobNumber ?? 62775;
 
         return (string) ($base + 1);
     }
